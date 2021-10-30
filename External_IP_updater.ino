@@ -1,5 +1,15 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
+#include <Ticker.h>  //Ticker Library
+
+Ticker blinker;
+
+#define LED 2  //On board LED
+
+void changeState()
+{
+  digitalWrite(LED, !(digitalRead(LED)));  //Invert Current State of LED  
+}
 
 //WiFi credentials
 const char* ssid = "itsWiFi";
@@ -17,6 +27,8 @@ WiFiClient client;
 HTTPClient http;
 
 void setup() {
+  pinMode(LED,OUTPUT);
+  digitalWrite(LED,HIGH);
   Serial.begin(9600);
   delay(1000);
 
@@ -27,16 +39,22 @@ void setup() {
   WiFi.begin(ssid, password);
 
   //check wi-fi is connected to wi-fi network
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
+  while (WiFi.status() != WL_CONNECTED) 
+  {
+    delay(1500);
     Serial.print(".");
+    digitalWrite(LED,LOW);
+    blinker.attach(0.5, changeState);
   }
   Serial.println("");
   Serial.println("WiFi connected");
+  digitalWrite(LED,LOW);
+  //blinker.attach(2, changeState);   //Initialize Ticker every 2s
 }
 
 void loop()
 {
+  blinker.attach(0.1, changeState);
   Serial.print("Update Cycle: ");
   Serial.println(cycle);
   
@@ -58,9 +76,10 @@ void loop()
     if (httpCode > 0)
     { 
       String payload = http.getString();   //Get the request response payload
-
+      
       //Print the response payload
       Serial.println("Response from DuckDns");
+      delay(3000);//for led indication
       Serial.println("{");
       Serial.println(payload);             
       Serial.println("}");
@@ -77,6 +96,8 @@ void loop()
   cycle++;         //Update cycle number
   Serial.println();
   Serial.println();
+  
+  blinker.attach(2, changeState);
   delay(30000);    //Send a request every 30 seconds
 }
 
