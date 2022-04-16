@@ -1,14 +1,14 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
-#include <Ticker.h>  //Ticker Library
+#include <Ticker.h>  //Ticker Library 
 
 Ticker blinker;
 
 #define LED 2  //On board LED
 
-void changeState()
-{
-  digitalWrite(LED, !(digitalRead(LED)));  //Invert Current State of LED  
+  void changeState()  
+{ 
+  digitalWrite(LED, !(digitalRead(LED)));  //Invert Current State of LED    
 }
 
 //WiFi credentials
@@ -23,7 +23,8 @@ String ip;
 int cycle = 1;
 
 //object declaration
-WiFiClient client;
+//WiFiClient client;
+WiFiClientSecure client;
 HTTPClient http;
 
 void setup() {
@@ -49,7 +50,7 @@ void setup() {
   Serial.println("");
   Serial.println("WiFi connected");
   digitalWrite(LED,LOW);
-  //blinker.attach(2, changeState);   //Initialize Ticker every 2s
+  client.setInsecure();/////////////////////////////////////////////
 }
 
 void loop()
@@ -63,12 +64,13 @@ void loop()
   //Configure DuckDns update link
   String getLink;
   getLink = _getLink + ip + "&verbose=true";
-  
+    
   if (WiFi.status() == WL_CONNECTED) //Check WiFi connection status 
   { 
     //Send request
     //never ever use https use only http damn
-    http.begin(getLink);    
+    http.begin(getLink);
+    //http.begin("https://link-ip.nextdns.io/dc6f9e/0e1a8951b0479e58");    //NextDNS
     int httpCode = http.GET();                                 
 
     //Check if the request got any valid response
@@ -96,30 +98,27 @@ void loop()
   cycle++;         //Update cycle number
   Serial.println();
   Serial.println();
-  
   blinker.attach(2, changeState);
+
   delay(30000);    //Send a request every 30 seconds
 }
 
 void GetExternalIP()
 {
   HTTPClient http;
-  http.begin("http://api64.ipify.org/?format=json");     //Specify request destination
-
+  client.setInsecure();///////////////////////////////////////
+  http.begin(client,"https://link-ip.nextdns.io/dc6f9e/0e1a8951b0479e58");     //Specify request destination
+  
   int httpCode = http.GET();            //Send the request
   String payload = http.getString();    //Get the response payload
   ip = "";
-  //Serial.println(httpCode1);   //Print HTTP return code
-  //Serial.println(payload1);      //Print request response payload
+  Serial.print("HTTP response code: ");
+  Serial.println(httpCode);
+  Serial.print("Payload: ");//Print HTTP return code
+  Serial.println(payload);      //Print request response payload
   http.end();
   
-  int n=7;
-  
-  while(payload[n]!='"')
-  {
-    ip += payload[n];
-    n++;
-  }
+  ip = payload;
   //Serial.println("**********************************");
   Serial.print("Current Public IP: ");
   Serial.println(ip);
